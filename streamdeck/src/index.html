@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamDeck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div id="ambient-bg"></div>
+  
+  <!-- Integrated Sidebar (Single Window) -->
+  <div id="sidebar-container">
+    <div class="nav-item" id="btn-search">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </div>
+      <span>Search</span>
+    </div>
+    <div class="nav-item" id="btn-back">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+      </div>
+      <span>Back</span>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="nav-item active" id="btn-home">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      </div>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" id="btn-explore">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
+          <line x1="9.69" y1="8" x2="21.17" y2="8" />
+          <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
+          <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
+          <line x1="14.31" y1="16" x2="2.83" y2="16" />
+          <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
+        </svg>
+      </div>
+      <span>Explore</span>
+    </div>
+    <div class="nav-item" id="btn-library">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      </div>
+      <span>My Library</span>
+    </div>
+    <div class="nav-item" id="btn-live">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+          <polyline points="17 2 12 7 7 2" />
+        </svg>
+      </div>
+      <span>Live TV</span>
+    </div>
+    <div class="nav-item" id="btn-settings">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+      </div>
+      <span>Settings</span>
+    </div>
+
+    <div class="sidebar-section-header">Your Apps</div>
+    <div id="nav-apps"></div>
+
+
+  </div>
+
+  <!-- Custom Title Bar -->
+  <div id="titlebar">
+    <div class="titlebar-drag">
+      <div class="titlebar-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="4" fill="url(#logo-grad)" />
+          <polygon points="10,7 17,12 10,17" fill="white" />
+          <defs>
+            <linearGradient id="logo-grad" x1="0" y1="0" x2="24" y2="24">
+              <stop offset="0%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#EC4899" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="titlebar-title">StreamDeck</span>
+      </div>
+    </div>
+    <div class="titlebar-controls">
+      <!-- TV Mode Home Button -->
+      <button id="btn-home-tv" class="tv-home-btn" onclick="goHome()" title="Home Screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </button>
+
+      <!-- Universal Mode Toggle (Sliding Pill) -->
+      <div id="tv-segmented-toggle" class="tv-segmented-toggle" onclick="toggleTvMode()">
+        <div class="toggle-indicator"></div>
+        <div class="pill-segment pc-segment">PC Mode</div>
+        <div class="pill-segment tv-segment">TV Mode</div>
+      </div>
+
+      <!-- Webview Zoom Controls -->
+      <div id="webview-zoom-controls" class="zoom-controls" style="display: none;">
+        <button class="zoom-btn" onclick="event.stopPropagation(); changeZoom(-0.25)" title="Zoom Out">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <span id="zoom-level-display" class="zoom-display">100%</span>
+        <button class="zoom-btn" onclick="event.stopPropagation(); changeZoom(0.25)" title="Zoom In">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button class="zoom-btn reset-btn" onclick="event.stopPropagation(); resetZoom()" title="Reset (100%)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        </button>
+      </div>
+      <button id="btn-minimize" class="titlebar-btn" aria-label="Minimize">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect y="5" width="12" height="1.5" fill="currentColor" rx="0.5" />
+        </svg>
+      </button>
+
+      <button id="btn-maximize" class="titlebar-btn" aria-label="Maximize">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" rx="1.5" />
+        </svg>
+      </button>
+      <button id="btn-close" class="titlebar-btn btn-close" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div id="main-content">
+
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen active">
+      <div class="home-header pc-mode-hidden">
+        <div class="greeting">
+          <h1>Welcome Back</h1>
+          <p>Jump right back into your favorite streaming hubs</p>
+        </div>
+        <div class="home-header-actions">
+          <div class="search-trigger" onclick="showSearch()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span>Search movies, shows...</span>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="home-content-body">
+
+
+
+        <!-- TV Mode Hero Spotlight (Combined Sports & Trending) -->
+        <div class="tv-hero-section" id="tv-hero-section" style="display:none;">
+          <div class="hero-card-wrapper">
+            <div class="hero-carousel-viewport">
+              <div id="tv-hero-slider" class="hero-slider">
+                <div class="hero-loading">
+                  <div class="loader-ring"></div>
+                  <p>Loading Live TV & Top Picks...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Double Stacked Trending Section (PC Mode Only) -->
+        <div class="trending-stacks-row">
+          <div class="trending-stack-column">
+            <div class="row-header">
+              <h3>What's Trending Globally</h3>
+            </div>
+            <div class="hero-card-wrapper stacked-trending-wrapper">
+              <div class="hero-carousel-viewport">
+                <div id="global-trending-slider" class="hero-slider stacked-trending-slider">
+                  <div class="hero-loading">
+                    <div class="loader-ring" style="width:24px; height:24px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="trending-stack-column">
+            <div class="row-header">
+              <h3>What's Trending in India</h3>
+            </div>
+            <div class="hero-card-wrapper stacked-trending-wrapper">
+              <div class="hero-carousel-viewport">
+                <div id="india-trending-slider" class="hero-slider stacked-trending-slider">
+                  <div class="hero-loading">
+                    <div class="loader-ring" style="width:24px; height:24px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-row" id="continue-watching-section" style="display:none;">
+          <div class="row-header">
+            <h3>Continue Watching</h3>
+          </div>
+          <button class="scroll-arrow prev" onclick="scrollRow('continue-watching-row', -1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <div class="horizontal-scroll" id="continue-watching-row"></div>
+          <button class="scroll-arrow next" onclick="scrollRow('continue-watching-row', 1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- TV Apps Row (TV Mode Only) -->
+        <div class="content-row tv-mode-only" id="apps-section">
+          <div class="row-header">
+            <h3>Streaming Apps</h3>
+          </div>
+          <button class="scroll-arrow prev" onclick="scrollRow('apps-row', -1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <div class="horizontal-scroll" id="apps-row"></div>
+          <button class="scroll-arrow next" onclick="scrollRow('apps-row', 1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- My Library Row -->
+        <div class="content-row" id="library-section">
+          <div class="row-header">
+            <h3>My Library</h3>
+          </div>
+          <div class="horizontal-scroll" id="library-row">
+            <!-- Mock items for now -->
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+          </div>
+        </div>
+
+        <!-- New Releases / Trending Row -->
+        <div class="content-row" id="trending-section">
+          <div class="row-header">
+            <h3>New Releases</h3>
+          </div>
+          <div class="horizontal-scroll" id="trending-row"></div>
+        </div>
+
+        <!-- Popular Anime Row -->
+        <div class="content-row" id="anime-section">
+          <div class="row-header">
+            <h3>🎌 Popular Anime</h3>
+          </div>
+          <div class="horizontal-scroll" id="anime-row">
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+            <div class="poster-card-skeleton"></div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- Explore Screen -->
+    <div id="explore-screen" class="screen">
+      <div class="screen-header">
+        <h2 class="section-title">Explore Hub</h2>
+      </div>
+      <div class="home-content-body">
+        <div class="search-trigger" onclick="showSearch()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span>Search movies, shows, series...</span>
+        </div>
+
+        <div id="explore-hub-content" class="explore-hub-content">
+          <!-- Dynamic Platform Rows will be injected here -->
+          <div class="discovery-loading">
+            <div class="loader-ring"></div>
+            <p>Fetching the best of streaming for you...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Library Screen -->
+    <div id="library-screen" class="screen">
+      <div class="screen-header">
+        <h2 class="section-title">My Library</h2>
+      </div>
+      <div class="home-content-body" id="library-content">
+        <div class="empty-state">
+          <p>Your saved movies and shows will appear here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Landing Screen -->
+    <div id="app-landing-screen" class="screen">
+      <div id="app-hero" class="app-hero">
+        <div class="app-hero-content">
+          <div id="app-hero-logo" class="app-hero-logo"></div>
+        </div>
+      </div>
+      <div class="home-content-body" id="app-landing-content">
+        <!-- Dynamic content rows for the app will be injected here -->
+      </div>
+    </div>
+    
+    <!-- Live TV Screen -->
+    <div id="live-screen" class="screen">
+      <div class="screen-header" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <h2 class="section-title">Live TV</h2>
+        <div style="display:flex; align-items:center; gap:12px;">
+
+          <button id="btn-refresh-sports" class="refresh-btn" title="Refresh Live Scores" onclick="refreshSportsHub()">
+             <svg class="refresh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M23 4v6h-6"></path>
+               <path d="M1 20v-6h6"></path>
+               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+             </svg>
+             <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+      <div class="home-content-body" id="live-hub-content">
+        <!-- Cricket Row -->
+        <div class="content-row" id="cricket-section">
+          <div class="row-header" id="header-cricket">
+            <h3>Cricket</h3>
+            <div class="toggle-chevron">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="horizontal-scroll" id="cricket-row"></div>
+        </div>
+
+        <!-- Football Section (Parent) -->
+        <div class="content-row" id="football-parent-section">
+          <div class="row-header">
+            <h3>Football</h3>
+          </div>
+          <div id="football-container" style="padding-left: 20px; border-left: 2px solid rgba(255,255,255,0.05); margin-left: 10px;">
+            <!-- Dynamic League Rows Injected Here -->
+          </div>
+        </div>
+
+        <!-- F1 & Motorsports Row -->
+        <div class="content-row" id="motorsports-section">
+          <div class="row-header" id="header-motorsports">
+            <h3>F1 & Motorsports</h3>
+            <div class="toggle-chevron">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="horizontal-scroll" id="motorsports-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App View (Webview Container) -->
+    <div id="app-view" class="screen">
+      <div id="app-loading" class="loading-overlay">
+        <div class="loader">
+          <div class="loader-ring"></div>
+          <span class="loader-text">Loading...</span>
+        </div>
+      </div>
+
+      <!-- MovieBox Fallback Overlay -->
+      <div id="moviebox-fallback-overlay" class="fallback-overlay">
+        <div class="fallback-content">
+          <div class="fallback-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h2>Connection Issue</h2>
+          <p>MovieBox is currently unreachable. Select an alternative domain from the verified list below.</p>
+          
+          <div class="fallback-selector-group">
+            <select id="fallback-url-select">
+              <option value="">Fetching sources...</option>
+            </select>
+            <button id="btn-switch-fallback" class="btn-primary">Switch & Reload</button>
+          </div>
+          
+          <button id="btn-fallback-close" class="btn-skip" onclick="hideFallbackOverlay()">Back to Home</button>
+        </div>
+      </div>
+
+      <div id="webview-container"></div>
+    </div>
+  </div>
+
+  <!-- Search Overlay -->
+  <div id="search-overlay" class="overlay">
+    <div class="search-modal">
+      <div class="search-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" id="search-input" placeholder="Search movies, shows, sports..." autofocus>
+        <button id="btn-search-close" class="search-close-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div id="search-results" class="search-results">
+        <div class="search-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+            stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <p>Type to search across all your streaming platforms</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Overlay -->
+  <div id="api-key-overlay" class="overlay">
+    <div class="api-key-modal">
+      <div class="api-key-header">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="4" fill="url(#logo-grad2)" />
+          <polygon points="10,7 17,12 10,17" fill="white" />
+          <defs>
+            <linearGradient id="logo-grad2" x1="0" y1="0" x2="24" y2="24">
+              <stop offset="0%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#EC4899" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <h2>Settings</h2>
+        <p>Configure your streaming experience and smart search.</p>
+      </div>
+
+      <!-- 1. Streaming Sources -->
+      <div class="settings-section section-sources">
+        <div class="settings-section-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+              <polyline points="17 2 12 7 7 2"></polyline>
+            </svg>
+            <span>Streaming Sources</span>
+          </div>
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="settings-section-body">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="api-key-input-group">
+              <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:6px;">Select MovieBox Provider</label>
+              <select id="moviebox-domain-selector" onchange="toggleCustomDomainInput()"
+                style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px; color:white; font-size:13px; outline:none; margin-bottom:8px;">
+                <option value="moviebox.mov">MovieBox (Default)</option>
+                <option value="custom">Manual Entry...</option>
+              </select>
+              
+              <div id="moviebox-custom-domain-container" style="display:none;">
+                <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:6px;">Custom Domain (e.g. site.com)</label>
+                <input type="text" id="moviebox-domain-input" placeholder="cineby.sc"
+                  style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px; color:white; font-size:13px; outline:none;" />
+              </div>
+            </div>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 8px 0;">
+            <div class="api-key-input-group">
+              <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:6px;">Live Sports Providers</label>
+              <div id="live-sports-providers-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; max-height: 150px; overflow-y: auto;">
+                <!-- dynamic list populated by app.js -->
+              </div>
+              <button class="btn-primary" onclick="addLiveSportsProviderUI()" style="padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);">Add Custom Provider</button>
+            </div>
+          </div>
+          <div class="api-key-input-group" style="margin-top:20px">
+            <button class="btn-primary" onclick="saveApiKey()">Save Sources</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Smart Search -->
+      <div class="settings-section section-search">
+        <div class="settings-section-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Smart Search (TMDB API)</span>
+          </div>
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="settings-section-body">
+          <div class="api-key-steps" style="margin-bottom:12px; background:transparent; border:none; padding:0;">
+            <div class="api-step">
+              <span class="step-num">1</span>
+              <span>Go to <strong>themoviedb.org</strong> and search for your API Key</span>
+            </div>
+          </div>
+          <div class="api-key-input-group">
+            <input type="text" id="api-key-input" placeholder="Paste your TMDB API key here..."
+              style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px; color:white; font-size:13px; outline:none;" />
+          </div>
+          <div class="api-key-input-group" style="margin-top:20px">
+            <button class="btn-primary" onclick="saveApiKey()">Save Search Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Watch Stats Section -->
+      <div class="settings-section section-stats" id="watch-stats-section">
+        <div class="settings-section-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Watch Stats</span>
+          </div>
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="settings-section-body">
+          <!-- Total Watch Time -->
+          <div class="watch-stats-grid">
+            <div class="ws-card ws-card-accent" id="ws-total-time">
+              <div class="ws-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="ws-card-body">
+                <div class="ws-card-value" id="ws-time-value">--</div>
+                <div class="ws-card-label">This Month</div>
+              </div>
+            </div>
+            <div class="ws-card" id="ws-total-sessions">
+              <div class="ws-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div class="ws-card-body">
+                <div class="ws-card-value" id="ws-sessions-value">--</div>
+                <div class="ws-card-label">Sessions</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Usage -->
+          <div class="ws-subsection">
+            <div class="ws-subsection-title">Most Used Platforms</div>
+            <div id="ws-platforms-list" class="ws-platforms-list">
+              <div class="ws-empty-state">No data yet — start watching!</div>
+            </div>
+          </div>
+
+          <!-- Top 5 Titles -->
+          <div class="ws-subsection">
+            <div class="ws-subsection-title">Top 5 Most Watched</div>
+            <div id="ws-top-titles" class="ws-top-titles">
+              <div class="ws-empty-state">No data yet — start watching!</div>
+            </div>
+          </div>
+
+          <!-- Favorite Genres -->
+          <div class="ws-subsection">
+            <div class="ws-subsection-title">Favorite Genres</div>
+            <div id="ws-genres" class="ws-genres">
+              <div class="ws-empty-state">No data yet — start watching!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px; padding-bottom: 24px;">
+        <button id="btn-skip-api-key" class="btn-skip" onclick="hideApiKeySetup()" style="font-size: 14px; font-weight: 600;">Close Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Provider Selection Overlay -->
+  <div id="provider-selection-overlay" class="overlay">
+    <div class="search-modal provider-modal">
+      <div class="search-header provider-modal-header">
+        <h2 style="margin:0;">Select Provider</h2>
+        <button class="search-close-btn" onclick="hideProviderSelectionOverlay()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div id="provider-selection-list">
+        <!-- dynamic providers -->
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

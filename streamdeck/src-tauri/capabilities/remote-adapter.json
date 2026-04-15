@@ -1,0 +1,16 @@
+{
+  "identifier": "remote-event-bridge",
+  "description": "Allows remote streaming webviews to notify the parent hub of full-screen and UI status changes.",
+  "windows": ["main"],
+  "webviews": [
+    "wv-*"
+  ],
+  "remote": {
+    "urls": [
+      "https://*"
+    ]
+  },
+  "permissions": [
+    "core:event:allow-emit"
+  ]
+}
