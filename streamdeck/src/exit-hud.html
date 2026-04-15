@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            pointer-events: none;
+            /* Let clicks through unless on the button */
+        }
+
+        .floating-exit-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            background: rgba(18, 18, 26, 0.85);
+            backdrop-filter: blur(16px);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateY(-20px) scale(0.8);
+            pointer-events: auto;
+        }
+
+        .floating-exit-btn.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .floating-exit-btn:hover {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .hover-zone {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            z-index: 9998;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hover-zone" id="hover-zone"></div>
+    <button id="exit-btn" class="floating-exit-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+
+    <script>
+        const btn = document.getElementById('exit-btn');
+        const zone = document.getElementById('hover-zone');
+        let hideTimer;
+
+        function show() {
+            btn.classList.add('visible');
+            clearTimeout(hideTimer);
+        }
+
+        function hide() {
+            hideTimer = setTimeout(() => {
+                if (!btn.matches(':hover') && !zone.matches(':hover')) {
+                    btn.classList.remove('visible');
+                }
+            }, 1000);
+        }
+
+        zone.addEventListener('mouseenter', show);
+        zone.addEventListener('mouseleave', hide);
+        btn.addEventListener('mouseenter', show);
+        btn.addEventListener('mouseleave', hide);
+
+        btn.addEventListener('click', () => {
+            console.log('[HUD] Exit Button Clicked');
+            window.__TAURI__.event.emit('exit-fullscreen-request');
+        });
+    </script>
+</body>
+
+</html>

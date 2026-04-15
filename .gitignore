@@ -1,0 +1,28 @@
+# Ignore nested node modules and target paths
+streamdeck/node_modules/
+streamdeck/.npm/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+streamdeck/.DS_Store
+streamdeck/Thumbs.db
+
+# Environment variables
+streamdeck/.env
+streamdeck/.env.local
+streamdeck/.env.*
+
+# Tauri / Rust target directory
+streamdeck/src-tauri/target/
+
+# Large binaries and debug archives
+streamdeck/castlabs-electron.zip
+streamdeck/castlabs-extracted/
+streamdeck/rustup-init.exe
+streamdeck/vs_BuildTools.exe
+
+# Temporary files
+streamdeck/tmp/
+streamdeck/*.tmp
+streamdeck/*.temp

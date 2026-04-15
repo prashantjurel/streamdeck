@@ -1,0 +1,21 @@
+{
+  "name": "streamdeck",
+  "version": "1.0.0",
+  "description": "Unified Entertainment Hub for Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "tauri dev",
+    "dev": "tauri dev",
+    "tauri": "tauri"
+  },
+  "author": "StreamDeck",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/cli": "^2.10.1",
+    "electron": "^33.4.11"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-http": "^2.5.7"
+  }
+}

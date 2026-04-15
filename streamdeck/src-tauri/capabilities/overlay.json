@@ -1,0 +1,17 @@
+{
+  "identifier": "overlay",
+  "description": "Permissions for the floating sidebar overlay",
+  "windows": [
+    "sidebar-overlay"
+  ],
+  "permissions": [
+    "core:window:default",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:webview:default",
+    "core:event:default"
+  ]
+}
