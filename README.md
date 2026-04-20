@@ -29,7 +29,7 @@ Before building StreamDeck locally, make sure you have the following installed t
 
 1. **Clone the repository:**
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/prashantjurel/streamdeck
    cd streamdeck
    ```
 
