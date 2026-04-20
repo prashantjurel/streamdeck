@@ -941,6 +941,18 @@ const APPS = [
     logo: 'assets/logos/sports.png',
     letter: 'L',
     svgIcon: `<svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>`
+  },
+  {
+    id: 'browser',
+    name: 'Browser',
+    desc: 'Generic Web Browser',
+    providerId: null,
+    url: 'https://www.google.com',
+    searchUrl: 'https://www.google.com/search?q=',
+    color: '#4B5563',
+    logo: 'assets/logos/browser.png',
+    letter: 'B',
+    svgIcon: `<svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
   }
 ];
 
@@ -950,6 +962,8 @@ let loadedWebviews = {};
 let webviewCreating = new Set();
 let userOpenedApps = new Set();
 let activeLaunchJobId = null;
+let isAdventureSession = false; // Tracks if current webview is an Adventure discovery
+
 
 let currentSearchQuery = '';
 let currentSearchContent = '';
@@ -1410,12 +1424,14 @@ async function pollCurrentWebviewUrl() {
                       const items = document.querySelectorAll('.film-poster-img, .manga-poster-img, .anis-content-poster img, .ani-poster img, #ani-poster');
                       if (items.length > 0) thumb = items[0].getAttribute('src') || thumb;
 
-                      window.__TAURI__.event.emit('cw-metadata-update', {
-                        appId: '${currentApp}',
-                        url: location.href,
-                        t: t,
-                        thumb: thumb
-                      }).catch(function(){});
+                      if (window.__TAURI__ && window.__TAURI__.event) {
+                        window.__TAURI__.event.emit('cw-metadata-update', {
+                          appId: '${currentApp}',
+                          url: location.href,
+                          t: t,
+                          thumb: thumb
+                        }).catch(function(){});
+                      }
                     } catch(e) {}
                 }
 
@@ -1727,6 +1743,37 @@ function showApiKeySetup() {
       listEl.appendChild(item);
     });
   }
+
+  // --- Adventure Reset Section ---
+  const settingsContainer = document.querySelector('.api-key-container'); // Need to find the inner container
+  if (settingsContainer) {
+    let advSection = document.getElementById('settings-adventure-section');
+    if (!advSection) {
+      advSection = document.createElement('div');
+      advSection.id = 'settings-adventure-section';
+      advSection.style.cssText = 'margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);';
+      settingsContainer.appendChild(advSection);
+    }
+    
+    advSection.innerHTML = `
+      <h3 style="font-size: 14px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Adventure Discovery</h3>
+      <div style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">Change your interests to see different content in the Adventure tab.</p>
+        <button onclick="resetAdventurePreferences()" style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent-primary); color: var(--accent-primary); padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+          Reset Adventure Preferences
+        </button>
+      </div>
+    `;
+  }
+}
+
+function resetAdventurePreferences() {
+  localStorage.removeItem('streamdeck_adventure_prefs');
+  localStorage.removeItem('streamdeck_adventure_recent_sources');
+  adventureCards = [];
+  currentAdventureIndex = 0;
+  showScreen('adventure-prefs-overlay');
+  renderAdventurePrefs();
 }
 
 function addLiveSportsProviderUI() {
@@ -2056,6 +2103,723 @@ function initHomeScreen() {
   startImmersiveHeartbeat();
 }
 
+// ================================================
+// Adventure / Discovery Feature
+// ================================================
+const ADVENTURE_CATEGORIES = [
+  { id: 'science', name: 'Science & Math', emoji: '🧪' },
+  { id: 'history', name: 'History', emoji: '📜' },
+  { id: 'philosophy', name: 'Philosophy & Life', emoji: '🧘' },
+  { id: 'tech', name: 'Technology', emoji: '💻' },
+  { id: 'nature', name: 'Nature', emoji: '🌿' },
+  { id: 'culture', name: 'Culture & Society', emoji: '🌍' },
+  { id: 'arts', name: 'Arts & Design', emoji: '🎨' },
+  { id: 'business', name: 'Business', emoji: '💼' },
+  { id: 'health', name: 'Health & Psychology', emoji: '🧠' },
+  { id: 'literature', name: 'Literature', emoji: '📚' },
+  { id: 'music', name: 'Music', emoji: '🎵' },
+  { id: 'food', name: 'Food', emoji: '🍳' },
+  { id: 'fun', name: 'Fun Stuff', emoji: '🎈' },
+  { id: 'gaming', name: 'Gaming', emoji: '🎮' },
+  { id: 'sports', name: 'Sports', emoji: '⚽' },
+  { id: 'other', name: 'Other', emoji: '✨' }
+];
+
+let adventureCards = [];
+let currentAdventureIndex = 0;
+let isAdventureDragging = false;
+let advStartX, advStartY;
+let advCurrentX, advCurrentY;
+let savedAdventures = JSON.parse(localStorage.getItem('streamdeck_adventure_saved') || '[]');
+
+const DISCOVERY_PROVIDERS = [
+  // --- Articles & Essays ---
+  { name: 'Aeon', type: 'rss', url: 'https://aeon.co/feed.rss', categories: ['philosophy', 'culture', 'arts'], contentType: 'Article' },
+  { name: 'Nautilus', type: 'rss', url: 'https://nautil.us/feed/', categories: ['science', 'nature'], contentType: 'Article' },
+  { name: 'Quanta', type: 'rss', url: 'https://www.quantamagazine.org/feed', categories: ['science', 'tech'], contentType: 'Article' },
+  { name: 'Big Think', type: 'rss', url: 'https://bigthink.com/feeds/feed.rss', categories: ['philosophy', 'science', 'tech'], contentType: 'Article' },
+  { name: 'Open Culture', type: 'rss', url: 'http://feeds.feedburner.com/OpenCulture', categories: ['culture', 'literature', 'arts', 'music'], contentType: 'Article' },
+  { name: 'Atlas Obscura', type: 'rss', url: 'https://www.atlasobscura.com/feeds/latest', categories: ['nature', 'history', 'culture'], contentType: 'Article' },
+  { name: 'Wait But Why', type: 'rss', url: 'https://waitbutwhy.com/feed', categories: ['philosophy', 'science', 'tech'], contentType: 'Article' },
+  { name: 'Wired', type: 'rss', url: 'https://www.wired.com/feed/rss', categories: ['tech', 'business'], contentType: 'Article' },
+  { name: 'Literary Hub', type: 'rss', url: 'https://lithub.com/feed/', categories: ['literature', 'culture'], contentType: 'Article' },
+  { name: 'Paris Review', type: 'rss', url: 'https://www.theparisreview.org/blog/feed/', categories: ['literature', 'arts'], contentType: 'Article' },
+  { name: 'The Browser', type: 'rss', url: 'https://thebrowser.com/rss/', categories: ['culture', 'philosophy', 'other'], contentType: 'Article' },
+  { name: 'Longform', type: 'rss', url: 'https://longform.org/feed.xml', categories: ['literature', 'culture'], contentType: 'Article' },
+  { name: 'Brain Pickings', type: 'rss', url: 'https://www.themarginalian.org/feed/', categories: ['philosophy', 'literature', 'arts'], contentType: 'Article' },
+  { name: 'Derek Sivers', type: 'rss', url: 'https://sive.rs/blog.rss', categories: ['philosophy', 'business'], contentType: 'Article' },
+  { name: 'Paul Graham', type: 'rss', url: 'http://www.paulgraham.com/rss.html', categories: ['tech', 'business', 'philosophy'], contentType: 'Article' },
+  
+  // --- Video & Documentaries ---
+  { name: 'Kurzgesagt', type: 'youtube_rss', channelId: 'UCsXVk37bltUXD1iCh9W9FQg', categories: ['science', 'tech', 'philosophy'], contentType: 'Video' },
+  { name: 'Veritasium', type: 'youtube_rss', channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA', categories: ['science', 'tech'], contentType: 'Video' },
+  { name: 'Vsauce', type: 'youtube_rss', channelId: 'UC6nSFpj9HTCZ5t-N3Rm3-HA', categories: ['science', 'health', 'fun'], contentType: 'Video' },
+  { name: 'DW Documentary', type: 'youtube_rss', channelId: 'UC_66_P7D3vS6Wpax_Wz3Aow', categories: ['culture', 'history', 'nature'], contentType: 'Documentary' },
+  { name: 'Real Stories', type: 'youtube_rss', channelId: 'UCv690_AitfL8t_94Vj0vL_g', categories: ['culture', 'history'], contentType: 'Documentary' },
+  { name: 'Dust', type: 'youtube_rss', channelId: 'UC7sDT8jZ76VylbL1_6LKy3w', categories: ['arts', 'tech', 'fun'], contentType: 'Short Film' },
+  { name: 'Frontline', type: 'youtube_rss', channelId: 'UC3ScyryU9Oy9Wse398qujrQ', categories: ['culture', 'business', 'history'], contentType: 'Documentary' },
+  { name: 'Timeline', type: 'youtube_rss', channelId: 'UC88lvyJe7aHZmcvzvubDFRg', categories: ['history'], contentType: 'Documentary' },
+  { name: 'TED', type: 'youtube_rss', channelId: 'UCAuUUnT6oDeKwE6v1NGQxug', categories: ['science', 'tech', 'culture', 'philosophy'], contentType: 'Video' },
+
+  // --- Podcasts & Audio ---
+  { name: 'Radiolab', type: 'rss', url: 'http://feeds.wnyc.org/radiolab', categories: ['science', 'culture', 'fun'], contentType: 'Podcast' },
+  { name: '99% Invisible', type: 'rss', url: 'http://feeds.feedburner.com/99percentinvisible', categories: ['arts', 'history', 'tech'], contentType: 'Podcast' },
+  { name: 'TED Radio Hour', type: 'rss', url: 'https://feeds.npr.org/510298/podcast.xml', categories: ['science', 'tech', 'culture'], contentType: 'Podcast' },
+  { name: 'Philosophize This!', type: 'rss', url: 'http://philosophizethis.libsyn.com/rss', categories: ['philosophy'], contentType: 'Podcast' },
+  { name: 'Science Vs', type: 'rss', url: 'https://feeds.megaphone.fm/sciencevs', categories: ['science', 'health'], contentType: 'Podcast' },
+  
+  // --- Science & Research ---
+  { name: 'Nature', type: 'rss', url: 'http://feeds.nature.com/nature/rss/current', categories: ['science'], contentType: 'Article' },
+  { name: 'arXiv', type: 'rss', url: 'http://export.arxiv.org/rss/physics', categories: ['science', 'tech'], contentType: 'Research' },
+  { name: 'SciTech Daily', type: 'rss', url: 'https://scitechdaily.com/feed/', categories: ['science', 'tech', 'nature'], contentType: 'Article' },
+  { name: 'Smithsonian', type: 'rss', url: 'https://www.smithsonianmag.com/rss/latest/', categories: ['history', 'nature', 'arts'], contentType: 'Article' },
+
+  // --- Niche & Interest ---
+  { name: 'Serious Eats', type: 'rss', url: 'https://www.seriouseats.com/rss', categories: ['food'], contentType: 'Article' },
+  { name: 'Psychology Today', type: 'rss', url: 'https://www.psychologytoday.com/us/rss/index.xml', categories: ['health'], contentType: 'Article' },
+  { name: 'IGN', type: 'rss', url: 'https://feeds.feedburner.com/ign/news', categories: ['gaming', 'tech'], contentType: 'Article' },
+  { name: 'Pitchfork', type: 'rss', url: 'https://pitchfork.com/feed/rss', categories: ['music', 'culture'], contentType: 'Article' },
+  { name: 'Wikipedia', type: 'wiki_featured', categories: ['history', 'science', 'culture', 'other'], contentType: 'Education' },
+
+  // --- Reddit Curated ---
+  { name: 'DeepValue', type: 'reddit', sub: 'DeepValue', categories: ['business', 'other'], contentType: 'Article' },
+  { name: 'Science', type: 'reddit', sub: 'science', categories: ['science'], contentType: 'Article' },
+  { name: 'InterestingAsFuck', type: 'reddit', sub: 'interestingasfuck', categories: ['fun', 'other'], contentType: 'Article' },
+  { name: 'Philosophy', type: 'reddit', sub: 'philosophy', categories: ['philosophy'], contentType: 'Article' },
+];
+
+async function initAdventureScreen() {
+  const container = document.getElementById('adventure-card-stack');
+  if (!container) return;
+
+  // Check for mandatory preferences
+  const savedPrefs = localStorage.getItem('streamdeck_adventure_prefs');
+  if (!savedPrefs) {
+    showScreen('adventure-prefs-overlay');
+    renderAdventurePrefs();
+    return;
+  }
+
+  // Clear existing stack if empty or first load
+  if (adventureCards.length === 0) {
+    container.innerHTML = `
+      <div class="adventure-card-placeholder">
+        <div class="loader-ring"></div>
+        <p>Discovering something amazing...</p>
+      </div>
+    `;
+    await fetchDiscoveryContent();
+  } else {
+    renderAdventureStack();
+  }
+}
+
+function renderAdventurePrefs() {
+  const grid = document.getElementById('category-grid');
+  if (!grid) return;
+
+  const savedPrefs = JSON.parse(localStorage.getItem('streamdeck_adventure_prefs') || '[]');
+  
+  grid.innerHTML = ADVENTURE_CATEGORIES.map(cat => `
+    <div class="category-card ${savedPrefs.includes(cat.id) ? 'selected' : ''}" 
+         id="cat-card-${cat.id}"
+         onclick="toggleAdventureCategory('${cat.id}')">
+      <div class="category-emoji">${cat.emoji}</div>
+      <div class="category-info">
+        <div class="category-name">${cat.name}</div>
+        <div style="font-size: 11px; color: var(--text-muted);">${getCategoryDescription(cat.id)}</div>
+      </div>
+      <div class="category-check"></div>
+    </div>
+  `).join('');
+
+  updateStartExploringButton();
+}
+
+function getCategoryDescription(id) {
+  const descriptions = {
+    science: 'Research, Physics, Math...',
+    history: 'Past events & civilizations',
+    philosophy: 'Thinkers & big ideas',
+    tech: 'Hardware & Software',
+    nature: 'Flora, Fauna & Earth',
+    culture: 'Society & Anthropology',
+    arts: 'Design & Visual Arts',
+    business: 'Finance & Strategy',
+    health: 'Body & Mind',
+    literature: 'Books & Writing',
+    music: 'Sounds & Melodies',
+    food: 'Cuisine & Nutrition',
+    fun: 'Strange & Humorous',
+    gaming: 'Games & Platforms',
+    sports: 'Athletic Excellence',
+    other: 'Everything else'
+  };
+  return descriptions[id] || '';
+}
+
+function toggleAdventureCategory(id) {
+  const card = document.getElementById(`cat-card-${id}`);
+  if (card) {
+    card.classList.toggle('selected');
+    updateStartExploringButton();
+  }
+}
+
+function toggleAllAdventureCategories() {
+  const cards = document.querySelectorAll('.category-card');
+  const allSelected = Array.from(cards).every(c => c.classList.contains('selected'));
+  cards.forEach(c => {
+    if (allSelected) c.classList.remove('selected');
+    else c.classList.add('selected');
+  });
+  updateStartExploringButton();
+}
+
+function updateStartExploringButton() {
+  const btn = document.getElementById('btn-start-exploring');
+  if (!btn) return;
+  const selected = document.querySelectorAll('.category-card.selected');
+  btn.disabled = selected.length === 0;
+}
+
+function saveAdventurePreferences() {
+  const selected = Array.from(document.querySelectorAll('.category-card.selected'))
+    .map(c => c.id.replace('cat-card-', ''));
+  
+  if (selected.length === 0) return;
+  
+  localStorage.setItem('streamdeck_adventure_prefs', JSON.stringify(selected));
+  showScreen('adventure-screen');
+}
+
+async function fetchDiscoveryContent() {
+  const savedPrefs = JSON.parse(localStorage.getItem('streamdeck_adventure_prefs') || '[]');
+  const recentSources = JSON.parse(localStorage.getItem('streamdeck_adventure_recent_sources') || '[]');
+  
+  // Filtering Logic
+  let filteredProviders = DISCOVERY_PROVIDERS.filter(p => 
+    p.categories.some(cat => savedPrefs.includes(cat))
+  );
+  if (filteredProviders.length === 0) filteredProviders = DISCOVERY_PROVIDERS;
+
+  // Serendipity Factor: 22% chance to pick from the entire pool regardless of preferences
+  const isSerendipity = Math.random() < 0.22;
+  const currentPool = isSerendipity ? DISCOVERY_PROVIDERS : filteredProviders;
+
+  // Anti-Repetition: Exclude recently seen sources
+  let availableProviders = currentPool.filter(p => !recentSources.includes(p.name));
+  
+  // If we ran out of new sources, clear half of the history
+  if (availableProviders.length < 3) {
+    const newRecent = recentSources.slice(Math.floor(recentSources.length / 2));
+    localStorage.setItem('streamdeck_adventure_recent_sources', JSON.stringify(newRecent));
+    availableProviders = currentPool.filter(p => !newRecent.includes(p.name));
+  }
+
+  // Pick up to 5 random unique providers to ensure massive variety
+  const selectedProviders = [];
+  const pool = [...availableProviders];
+  const count = Math.min(5, pool.length);
+  
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    selectedProviders.push(pool.splice(idx, 1)[0]);
+  }
+
+  console.log(`[Adventure] ${isSerendipity ? '✨ Serendipity' : '🔍 Preferences'} | Cross-fetching from:`, 
+    selectedProviders.map(p => p.name).join(', '));
+  
+  try {
+    const fetchPromises = selectedProviders.map(async (provider) => {
+      try {
+        let posts = [];
+        if (provider.type === 'reddit') posts = await fetchRedditSource(provider.sub);
+        else if (provider.type === 'rss') posts = await fetchRSSSource(provider);
+        else if (provider.type === 'wiki_featured') posts = await fetchWikiFeatured();
+        else if (provider.type === 'youtube_rss') posts = await fetchYouTubeRSS(provider);
+        
+        // Tag content type and take limited samples
+        return posts.slice(0, 4).map(p => ({
+          ...p,
+          contentType: provider.contentType || 'Article'
+        }));
+      } catch (e) {
+        return [];
+      }
+    });
+
+    const results = await Promise.all(fetchPromises);
+    const allNewPosts = results.flat();
+
+    if (allNewPosts.length > 0) {
+      // Update recent sources list
+      const updatedRecent = Array.from(new Set([...recentSources, ...selectedProviders.map(p => p.name)]));
+      localStorage.setItem('streamdeck_adventure_recent_sources', JSON.stringify(updatedRecent.slice(-20)));
+
+      // Shuffle for total randomness
+      allNewPosts.sort(() => Math.random() - 0.5);
+      
+      adventureCards = [...adventureCards, ...allNewPosts];
+      renderAdventureStack();
+      setupAdventureGestures();
+    } else {
+      console.warn('[Adventure] All providers empty, retrying with full pool...');
+      if (isSerendipity) return; // Prevent infinite loop
+      fetchDiscoveryContent(); 
+    }
+  } catch (err) {
+    console.error(`[Adventure] Content generation failed:`, err);
+  }
+}
+
+async function fetchRedditSource(sub) {
+  const response = await tauriFetch(`https://www.reddit.com/r/${sub}/top.json?limit=15&t=week`);
+  const json = await response.json();
+  return json.data.children.map(child => {
+    const p = child.data;
+    let imageUrl = p.url;
+    if (p.preview && p.preview.images && p.preview.images[0]) {
+      const resolutions = p.preview.images[0].resolutions;
+      // Prefer the resolution closest to 1000px width
+      const bestRes = resolutions.find(r => r.width >= 900) || resolutions[resolutions.length - 1] || p.preview.images[0].source;
+      imageUrl = bestRes.url.replace(/&amp;/g, '&');
+    }
+    return {
+      id: p.name,
+      title: p.title,
+      snippet: p.selftext || `Curated discovery from r/${p.subreddit}`,
+      thumb: imageUrl,
+      url: `https://reddit.com${p.permalink}`,
+      source: `r/${p.subreddit}`,
+      category: p.subreddit === 'science' ? 'Science & Math' : 'Fun Stuff'
+    };
+  }).filter(p => p.thumb && !p.thumb.includes('reddit.com/r/'));
+}
+
+async function fetchRSSSource(provider) {
+  const response = await tauriFetch(provider.url);
+  const text = await response.text();
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(text, 'text/xml');
+  const items = xmlDoc.querySelectorAll('item');
+  
+  return Array.from(items).map(item => {
+    const title = item.querySelector('title')?.textContent;
+    const link = item.querySelector('link')?.textContent;
+    const desc = item.querySelector('description')?.textContent || '';
+    const encodedContent = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+    
+    // Improved Image Extraction Chain
+    let thumb = '';
+    
+    // 1. Enclosure tag (Priority)
+    const enclosure = item.querySelector('enclosure[type^="image"]');
+    if (enclosure) {
+      thumb = enclosure.getAttribute('url');
+    }
+    
+    // 2. Media:content tags
+    if (!thumb) {
+       const mediaContent = item.getElementsByTagName('media:content')[0] || item.getElementsByTagName('media:thumbnail')[0];
+       if (mediaContent) thumb = mediaContent.getAttribute('url');
+    }
+
+    // 3. Regex from Encoded Content (often higher res)
+    if (!thumb && encodedContent) {
+        const imgMatch = encodedContent.match(/<img[^>]+src="([^">]+)"/i);
+        if (imgMatch) thumb = imgMatch[1];
+    }
+    
+    // 4. Regex from Description
+    if (!thumb && desc) {
+        const imgMatch = desc.match(/<img[^>]+src="([^">]+)"/i);
+        if (imgMatch) thumb = imgMatch[1];
+    }
+
+    // Robust sanitization for ALL discovery images (Fixes net::ERR_CONNECTION_RESET)
+    // Stripping query params ensures clean CDN requests and better caching.
+    if (thumb && thumb.includes('?')) {
+      thumb = thumb.split('?')[0];
+    }
+
+    // Default high-quality placeholder if still no image
+    if (!thumb) thumb = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop';
+
+    return {
+      id: link,
+      title: title,
+      snippet: cleanDiscoveryHTML(encodedContent || desc).substring(0, 180).trim() + '...',
+      thumb: thumb,
+      url: link,
+      source: provider.name,
+      category: getCategoryNameFromIds(provider.categories)
+    };
+  }).filter(p => p.title && p.url);
+}
+
+async function fetchWikiFeatured() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  
+  try {
+    const response = await tauriFetch(`https://en.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
+    const data = await response.json();
+    const results = [];
+    
+    // 1. Today's Featured Article
+    if (data.tfa) {
+      results.push({
+        id: 'wiki-tfa-' + d,
+        title: data.tfa.titles.normalized,
+        snippet: data.tfa.extract,
+        thumb: data.tfa.thumbnail?.source || data.tfa.originalimage?.source,
+        url: data.tfa.content_urls.desktop.page,
+        source: 'Wikipedia Featured',
+        category: 'Article of the Day'
+      });
+    }
+    
+    // 2. Fact selection from "On this day" or "In the news"
+    if (data.onthisday && data.onthisday[0]) {
+      const event = data.onthisday[0];
+      results.push({
+        id: 'wiki-otd-' + d,
+        title: `On This Day: ${event.year}`,
+        snippet: event.text,
+        thumb: event.pages[0]?.thumbnail?.source || results[0]?.thumb,
+        url: event.pages[0]?.content_urls?.desktop.page,
+        source: 'History',
+        category: 'Flashback'
+      });
+    }
+
+    return results;
+  } catch (e) { return []; }
+}
+
+async function fetchYouTubeRSS(provider) {
+  const response = await tauriFetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${provider.channelId}`);
+  const text = await response.text();
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(text, 'text/xml');
+  const entries = xmlDoc.querySelectorAll('entry');
+  
+  return Array.from(entries).map(entry => {
+    const title = entry.querySelector('title')?.textContent;
+    const link = entry.querySelector('link')?.getAttribute('href');
+    const videoId = entry.querySelector('yt\\:videoId, videoId')?.textContent;
+    const thumb = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+    const snippet = entry.querySelector('media\\:description, description')?.textContent?.substring(0, 150) + '...' || 'New video release.';
+
+    return {
+      id: videoId || link,
+      title: title,
+      snippet: snippet,
+      thumb: thumb,
+      url: link,
+      source: provider.name,
+      category: getCategoryNameFromIds(provider.categories)
+    };
+  });
+}
+
+function getCategoryNameFromIds(ids) {
+  if (!ids || ids.length === 0) return 'Other';
+  const firstId = ids[0];
+  const cat = ADVENTURE_CATEGORIES.find(c => c.id === firstId);
+  return cat ? cat.name : 'Other';
+}
+
+function cleanDiscoveryHTML(html) {
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return temp.textContent || temp.innerText || '';
+}
+
+async function fetchAdventureContent() {
+  await fetchDiscoveryContent();
+}
+
+function renderAdventureStack() {
+  const stack = document.getElementById('adventure-card-stack');
+  if (!stack) return;
+
+  // OPTIMIZATION: Prevent redundant wipes if the top card is already correct
+  const existingTop = stack.querySelector('.adventure-card');
+  const targetTop = adventureCards[currentAdventureIndex];
+  
+  if (existingTop && targetTop && existingTop.dataset.id === targetTop.id) {
+    return; // Already rendering the correct card at the top
+  }
+
+  stack.innerHTML = '';
+  
+  // Render top 5 cards (for depth effect in CSS)
+  const displayCards = adventureCards.slice(currentAdventureIndex, currentAdventureIndex + 5);
+  
+  if (displayCards.length === 0) {
+    if (adventureCards.length > 0) {
+      // Fetch more if we ran out
+      fetchAdventureContent();
+    }
+    return;
+  }
+
+  displayCards.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'adventure-card';
+    el.style.zIndex = 10 - i;
+    
+    // Depth effect for background cards
+    if (i > 0) {
+      const scale = 1 - (i * 0.05);
+      const translateY = i * 15;
+      el.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+      el.style.opacity = 1 - (i * 0.2);
+    }
+
+    // Only the top card is interactive
+    if (i === 0) {
+      el.id = 'active-adventure-card';
+    }
+
+    const catEmoji = ADVENTURE_CATEGORIES.find(c => c.name === card.category)?.emoji || '✨';
+    
+    // Content Type Emoji Mapping
+    const typeEmojis = {
+      'Article': '📄',
+      'Video': '📺',
+      'Podcast': '🎙️',
+      'Documentary': '🎬',
+      'Research': '🔬',
+      'Education': '🎓',
+      'Short Film': '🎞️',
+      'Website': '🌐'
+    };
+    const typeEmoji = typeEmojis[card.contentType] || '📝';
+
+    el.dataset.id = card.id;
+    el.innerHTML = `
+      <div class="adv-type-badge">${typeEmoji} ${card.contentType}</div>
+      <div class="adventure-card-thumb" 
+           style="background-image: url('${card.thumb}'), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop');">
+        <div class="adventure-card-badge">${catEmoji} ${card.category}</div>
+      </div>
+      <div class="adventure-card-content">
+        <div class="adventure-card-title">${card.title}</div>
+        <div class="adventure-card-snippet">${card.snippet}</div>
+        <div class="adventure-card-source">${card.source}</div>
+      </div>
+    `;
+    
+    stack.prepend(el);
+  });
+}
+
+function setupAdventureGestures() {
+  const card = document.getElementById('active-adventure-card');
+  if (!card) return;
+
+  const onStart = (e) => {
+    isAdventureDragging = true;
+    advStartX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    advStartY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+    card.classList.add('dragging');
+  };
+
+  const onMove = (e) => {
+    if (!isAdventureDragging) return;
+    advCurrentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    advCurrentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+    const dx = advCurrentX - advStartX;
+    const dy = advCurrentY - advStartY;
+    const rotation = dx / 15;
+
+    card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
+    
+    // Visual feedback for directions
+    if (dx > 50) card.style.filter = 'drop-shadow(0 0 30px rgba(16, 185, 129, 0.4))'; // Green for Right
+    else if (dx < -50) card.style.filter = 'drop-shadow(0 0 30px rgba(244, 63, 94, 0.4))'; // Red for Left
+    else if (dy < -50) card.style.filter = 'drop-shadow(0 0 30px rgba(139, 92, 246, 0.4))'; // Purple for Up
+    else card.style.filter = '';
+  };
+
+  const onEnd = () => {
+    if (!isAdventureDragging) return;
+    isAdventureDragging = false;
+    card.classList.remove('dragging');
+
+    const dx = advCurrentX - advStartX;
+    const dy = advCurrentY - advStartY;
+
+    if (Math.abs(dx) > 150) {
+      handleAdventureSwipe(dx > 0 ? 'right' : 'left');
+    } else if (dy < -120) {
+      handleAdventureSwipe('up');
+    } else {
+      // Reset
+      card.style.transform = '';
+      card.style.filter = '';
+    }
+  };
+
+  card.addEventListener('mousedown', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  
+  // Touch support for future-proofing / tablet mode
+  card.addEventListener('touchstart', onStart);
+  card.addEventListener('touchmove', onMove);
+  card.addEventListener('touchend', onEnd);
+}
+
+function handleAdventureSwipe(direction) {
+  const card = document.getElementById('active-adventure-card');
+  const cardData = adventureCards[currentAdventureIndex];
+  if (!card || !cardData) return;
+
+  // 1. Trigger animation
+  card.classList.add(`swipe-${direction}`);
+
+  // 2. Perform action
+  if (direction === 'right') {
+    saveAdventure(cardData);
+  } else if (direction === 'up') {
+    // Check if it's a YouTube video for native player
+    const ytMatch = cardData.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+    if (ytMatch && ytMatch[1]) {
+      openApp('youtube', cardData.url, cardData.title, true);
+    } else {
+      openApp('browser', cardData.url, cardData.title, true);
+    }
+  }
+
+  // 3. Update index and re-render
+  setTimeout(() => {
+    currentAdventureIndex++;
+    renderAdventureStack();
+    setupAdventureGestures();
+    
+    // Fetch more if running low
+    if (adventureCards.length - currentAdventureIndex < 10) {
+      fetchAdventureContent();
+    }
+  }, 400);
+}
+
+function goBackToAdventure() {
+  const btn = document.getElementById('btn-adv-back');
+  if (btn) btn.classList.add('is-loading');
+
+  if (currentApp) {
+    // Manually handle closure to ensure we go back to adventure screen
+    isAdventureSession = true; // Stay in session
+    closeApp(currentApp);
+  } else {
+    isAdventureSession = false;
+    const navBar = document.getElementById('adventure-nav-bar');
+    if (navBar) navBar.classList.add('hidden');
+    showScreen('adventure-screen');
+  }
+}
+
+function updateAdventureUrl(url) {
+    const urlText = document.getElementById('adv-nav-url-text');
+    if (!urlText) return;
+    
+    // Show full URL as requested
+    urlText.textContent = url;
+    urlText.title = url; // Add tooltip for full view
+}
+
+function loadNextAdventure() {
+    const btn = document.getElementById('btn-adv-next');
+    if (btn) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+    }
+
+    // Safety timeout: remove loading even if event doesn't fire
+    const safetyTimeout = setTimeout(() => {
+        if (btn) {
+            btn.classList.remove('is-loading');
+            btn.disabled = false;
+        }
+    }, 6000); 
+
+    // Move to next card
+    currentAdventureIndex++;
+    
+    // Check if we have more content
+    if (currentAdventureIndex < adventureCards.length) {
+        const next = adventureCards[currentAdventureIndex];
+        currentAdventure = next;
+        
+        // Listen for load finished to clear UI state
+        // Use a more specific check for the webview label if possible
+        const unlistenPromise = listen('tauri://finish-load', (event) => {
+             // Basic validation: event fires for a webview.
+             // Since we only expect one sub-app webview to be loading during adventure, this is safe.
+             if (btn) {
+                btn.classList.remove('is-loading');
+                btn.disabled = false;
+             }
+             clearTimeout(safetyTimeout);
+             unlistenPromise.then(fn => fn()); 
+        });
+
+        // Determine correct platform (replicate handleAdventureSwipe logic)
+        const ytMatch = next.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/);
+        const platform = (ytMatch && ytMatch[1]) ? 'youtube' : 'browser';
+
+        openApp(platform, next.url, next.title, true);
+        updateAdventureUrl(next.url);
+
+        // Update deck UI in the background so it's ready when we go back
+        renderAdventureStack();
+        setupAdventureGestures();
+
+        // Fetch more if running low
+        if (adventureCards.length - currentAdventureIndex < 10) {
+            fetchAdventureContent();
+        }
+    } else {
+        // No more cards, go back to prefs or show placeholder
+        if (btn) {
+            btn.classList.remove('is-loading');
+            btn.disabled = false;
+        }
+        clearTimeout(safetyTimeout);
+        showAdventurePrefs();
+    }
+}
+
+function saveAdventure(card) {
+  if (savedAdventures.find(a => a.url === card.url)) return;
+  savedAdventures.unshift(card);
+  localStorage.setItem('streamdeck_adventure_saved', JSON.stringify(savedAdventures));
+  console.log('[Adventure] Saved:', card.title);
+  
+  // Refresh library if open
+  if (document.getElementById('library-screen').classList.contains('active')) {
+    renderLibraryScreen();
+  }
+}
+
+function removeSavedAdventure(cardId) {
+  savedAdventures = savedAdventures.filter(a => a.id !== cardId);
+  localStorage.setItem('streamdeck_adventure_saved', JSON.stringify(savedAdventures));
+  renderLibraryScreen();
+}
+
+function loadSavedAdventures() {
+  return savedAdventures;
+}
+
 /**
  * Update the unified sidebar navigation state
  */
@@ -2165,6 +2929,7 @@ function initSidebarListeners() {
         },
         'btn-home': goHome,
         'btn-explore': () => showScreen('explore-screen'),
+        'btn-adventure': () => showScreen('adventure-screen'),
         'btn-library': () => showScreen('library-screen'),
         'btn-live': () => showScreen('live-screen'),
         'btn-settings': showApiKeySetup
@@ -2233,7 +2998,11 @@ function scrollRow(rowId, direction) {
  * Navigation System
  */
 function showScreen(screenId) {
-
+  // Reset adventure session only if navigating to a major screen other than adventure or apps
+  if (screenId !== 'app-view' && screenId !== 'adventure-screen') {
+    isAdventureSession = false;
+    document.getElementById('adventure-nav-bar')?.classList.add('hidden');
+  }
 
   // If showing a main screen, reset any sticky immersive state
   if (screenId !== 'app-view') {
@@ -2260,6 +3029,8 @@ function showScreen(screenId) {
       renderLibraryScreen();
     } else if (screenId === 'home-screen') {
       renderContinueWatchingRow();
+    } else if (screenId === 'adventure-screen') {
+      initAdventureScreen();
     }
   } else {
     console.error('Screen not found:', screenId);
@@ -2346,11 +3117,19 @@ async function closeApp(appIdParam) {
 
 
   if (wasActive) {
-
     currentApp = null;
-    await goHome();
+    
+    // If it's an adventure session, return to adventure deck instead of home
+    if (isAdventureSession) {
+      const navBar = document.getElementById('adventure-nav-bar');
+      if (navBar) navBar.classList.add('hidden');
+      isAdventureSession = false; // Reset session after returning
+      showScreen('adventure-screen');
+      updateNavigation();
+    } else {
+      await goHome();
+    }
   } else {
-
     updateNavigation();
   }
 }
@@ -2364,6 +3143,8 @@ function setActiveNavBtn(idOrScreen) {
     document.getElementById('btn-home')?.classList.add('active');
   } else if (idOrScreen === 'explore-screen') {
     document.getElementById('btn-explore')?.classList.add('active');
+  } else if (idOrScreen === 'adventure-screen' || idOrScreen === 'adventure-prefs-overlay') {
+    document.getElementById('btn-adventure')?.classList.add('active');
   } else if (idOrScreen === 'library-screen') {
     document.getElementById('btn-library')?.classList.add('active');
   } else if (idOrScreen === 'live-screen') {
@@ -2409,12 +3190,18 @@ function getViewBounds() {
 
   const w = window.innerWidth;
   const h = window.innerHeight;
+  
+  // ADJUSTMENT FOR ADVENTURE NAV BAR
+  let navBarHeight = 0;
+  if (isAdventureSession) {
+    navBarHeight = isTv ? 100 : 70;
+  }
 
-return {
+  return {
     x: xOffset,
     y: topOffset,
     width: Math.max(0, w - xOffset),
-    height: Math.max(0, h - topOffset)
+    height: Math.max(0, h - topOffset - navBarHeight)
   };
 }
 
@@ -2562,10 +3349,50 @@ async function safeWebviewCall(appId, method, args = {}, retryCount = 0) {
   // Use custom execute_script for navigation to bypass permission issues with core:webview
   if (method === 'navigate') {
     const url = typeof args === 'string' ? args : args.url;
+    
+    // INJECT ERROR SUPPRESSION BEFORE NAVIGATING
+    // This helps silence TrendMD, OneSignal, etc.
+    const suppressionScript = `
+      (function() {
+        // Prevent ReferenceErrors
+        window.TrendMD = window.TrendMD || { register: function() {}, dispatch: function() {} };
+        window.OneSignal = window.OneSignal || [];
+        window.OneSignal.push = function(fn) { if(typeof fn === 'function') try { fn(); } catch(e){} };
+        window.OneSignal.promptOptions = window.OneSignal.promptOptions || {};
+        
+        if (!window.$) window.$ = function() { return { on: function(){}, find: function(){}, attr: function(){} }; };
+
+        window.onerror = function(msg, url, line, col, error) {
+          const m = String(msg).toLowerCase();
+          if (m.includes('trendmd') || m.includes('onesignal') || m.includes('audioplayer') || m.includes('promptoptions')) return true;
+          return false;
+        };
+
+        // Silence specific console noise
+        const silentKeywords = ['OneSignal', 'TrendMD', 'doubleclick', 'googleads'];
+        console.warn = (function(orig) { 
+            return function() { 
+                const arg = arguments[0];
+                if (arg && typeof arg === 'string' && silentKeywords.some(k => arg.includes(k))) return; 
+                orig.apply(console, arguments); 
+            }; 
+        })(console.warn);
+        
+        console.error = (function(orig) { 
+            return function() { 
+                const arg = arguments[0];
+                if (arg && typeof arg === 'string' && silentKeywords.some(k => arg.includes(k))) return; 
+                orig.apply(console, arguments); 
+            }; 
+        })(console.error);
+
+      })();
+      window.location.href = "${url}";
+    `;
 
     return await window.__TAURI__.core.invoke('execute_script', {
       label: `wv-${appId}`,
-      script: `window.location.href = "${url}"`
+      script: suppressionScript
     });
   }
 
@@ -2788,7 +3615,18 @@ const isError = lowUrl.includes('chrome-error://') ||
 /**
  * New Hub Navigation Logic
  */
-function openApp(appId, searchQueryOrUrl, fallbackTitle) {
+function openApp(appId, searchQueryOrUrl, fallbackTitle, fromAdventure = false) {
+  isAdventureSession = fromAdventure;
+  
+  // Toggle Navigation Bar Visibility
+  const navBar = document.getElementById('adventure-nav-bar');
+  if (navBar) {
+    navBar.classList.toggle('hidden', !isAdventureSession);
+    if (isAdventureSession && searchQueryOrUrl) {
+        updateAdventureUrl(searchQueryOrUrl);
+    }
+  }
+
 
   // Intercept Live Sports
   if (appId === 'livesports') {
@@ -2826,10 +3664,6 @@ function openApp(appId, searchQueryOrUrl, fallbackTitle) {
  * Robust Immersive Mode Heartbeat
  * Proactively queries the active webview for player states every 1.5s.
  * This is "self-healing" even if the website reloads or scripts are lost.
- */
-/**
- * Robust Immersive Mode Heartbeat
- * Proactively queries the active webview for player states every 1.5s.
  */
 let lastImmersiveSignalTime = Date.now();
 
@@ -3158,13 +3992,13 @@ async function launchAppWebView(appId, searchQueryOrUrl, fallbackTitle) {
     if (searchQueryOrUrl || appId === 'moviebox') {
 
       
-      // RESET MOVIEBOX CLOCK: Start the 4s grace period from NOW for the new load
       if (appId === 'moviebox') {
           movieBoxLaunchTime = Date.now();
           movieBoxFallbackTriggered = false;
       }
       
-      await window.__TAURI__.core.invoke('set_webview_url', { label: `wv-${appId}`, url: targetUrl });
+      // Use consolidated safeWebviewCall to ensure error suppression scripts are injected
+      await safeWebviewCall(appId, 'navigate', targetUrl);
     }
 
     // Always ensure the webview matches the current UI bounds and is visible
@@ -4325,38 +5159,87 @@ function renderLibraryScreen() {
   const container = document.getElementById('library-content');
   if (!container) return;
 
-  if (watchlist.length === 0) {
+  const hasWatchlist = watchlist.length > 0;
+  const hasAdventures = savedAdventures.length > 0;
+
+  if (!hasWatchlist && !hasAdventures) {
     container.innerHTML = `
       <div class="empty-state">
-         <p>Your saved movies and shows will appear here.</p>
+         <p>Your saved movies and discovery gems will appear here.</p>
       </div>
     `;
     return;
   }
 
+  container.innerHTML = '';
 
-  container.innerHTML = '<div class="library-grid"></div>';
-  const grid = container.querySelector('.library-grid');
+  // 1. Render Watchlist Section
+  if (hasWatchlist) {
+    const wlHeader = document.createElement('h3');
+    wlHeader.className = 'library-section-title';
+    wlHeader.textContent = 'My Watchlist';
+    wlHeader.style.cssText = 'margin-bottom: 20px; font-size: 18px; color: var(--text-secondary); opacity: 0.8;';
+    container.appendChild(wlHeader);
 
-  watchlist.forEach(movie => {
-    const card = document.createElement('div');
-    card.className = 'poster-card';
-    card.innerHTML = `
-      <div class="poster-card-inner">
-        <img src="${TMDB_IMAGE_BASE}${movie.poster_path}" class="poster-img" loading="lazy" onerror="this.src='assets/placeholders/poster.png'">
-        <div class="poster-overlay">
-          <div class="poster-title">${movie.title}</div>
+    const wlGrid = document.createElement('div');
+    wlGrid.className = 'library-grid';
+    container.appendChild(wlGrid);
+
+    watchlist.forEach(movie => {
+      const card = document.createElement('div');
+      card.className = 'poster-card';
+      card.innerHTML = `
+        <div class="poster-card-inner">
+          <img src="${TMDB_IMAGE_BASE}${movie.poster_path}" class="poster-img" loading="lazy" onerror="this.src='assets/placeholders/poster.png'">
+          <div class="poster-overlay">
+            <div class="poster-title">${movie.title}</div>
+          </div>
         </div>
-      </div>
-      <button class="btn-card-remove" title="Remove from Library" onclick="event.stopPropagation(); removeFromWatchlist(${movie.id})">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-          <line x1="18" y1="12" x2="6" y2="12"></line>
-        </svg>
-      </button>
-    `;
-    card.onclick = () => showSearch(movie.title);
-    grid.appendChild(card);
-  });
+        <button class="btn-card-remove" title="Remove from Library" onclick="event.stopPropagation(); removeFromWatchlist(${movie.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <line x1="18" y1="12" x2="6" y2="12"></line>
+          </svg>
+        </button>
+      `;
+      card.onclick = () => showSearch(movie.title);
+      wlGrid.appendChild(card);
+    });
+  }
+
+  // 2. Render Saved Adventures Section
+  if (hasAdventures) {
+    const advHeader = document.createElement('h3');
+    advHeader.className = 'library-section-title';
+    advHeader.textContent = 'Saved Adventures';
+    advHeader.style.cssText = 'margin: 40px 0 20px 0; font-size: 18px; color: var(--text-secondary); opacity: 0.8;';
+    container.appendChild(advHeader);
+
+    const advGrid = document.createElement('div');
+    advGrid.className = 'library-grid adventure-library-grid';
+    container.appendChild(advGrid);
+
+    savedAdventures.forEach(adv => {
+      const card = document.createElement('div');
+      card.className = 'poster-card adventure-lib-card';
+      // Adventure cards are more landscape, but in library grid we'll keep them consistent or slight variation
+      card.innerHTML = `
+        <div class="poster-card-inner">
+          <img src="${adv.thumb}" class="poster-img" loading="lazy">
+          <div class="poster-overlay">
+            <div class="poster-title">${adv.title}</div>
+            <div class="poster-subtitle" style="font-size:10px; opacity:0.7;">${adv.source}</div>
+          </div>
+        </div>
+        <button class="btn-card-remove" title="Remove from Saved" onclick="event.stopPropagation(); removeSavedAdventure('${adv.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <line x1="18" y1="12" x2="6" y2="12"></line>
+          </svg>
+        </button>
+      `;
+      card.onclick = () => openApp('browser', adv.url, adv.title);
+      advGrid.appendChild(card);
+    });
+  }
 }
 
 // ================================================
